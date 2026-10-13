@@ -48,10 +48,7 @@ def get_platform():
     Returns the platform name as used in wheel filenames.
     """
     if sys.platform.startswith("linux"):
-        machine = platform.machine()
-        if machine not in ("x86_64", "aarch64"):
-            raise ValueError(f"Unsupported Linux architecture: {machine}")
-        return f"linux_{machine}"
+        return f"linux_{platform.machine()}"
     elif sys.platform == "darwin":
         mac_version = ".".join(platform.mac_ver()[0].split(".")[:2])
         return f"macosx_{mac_version}_x86_64"
