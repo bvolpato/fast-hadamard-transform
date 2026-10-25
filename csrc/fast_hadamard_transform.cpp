@@ -9,6 +9,7 @@
 #include <c10/cuda/CUDAGuard.h>
 #endif
 #include <c10/cuda/CUDAStream.h>
+#include <cstdint>
 #include <vector>
 
 #include "fast_hadamard_transform.h"
@@ -43,6 +44,14 @@ void fast_hadamard_transform_28N_cuda(HadamardParamsBase &params, cudaStream_t s
 
 template<typename input_t>
 void fast_hadamard_transform_40N_cuda(HadamardParamsBase &params, cudaStream_t stream);
+
+void align_input(at::Tensor &x, int alignment) {
+    if (reinterpret_cast<std::uintptr_t>(x.data_ptr()) % alignment != 0 ||
+        (x.size(0) > 1 && x.stride(0) % (alignment / x.element_size()) != 0)) {
+        // contiguous() can return an unaligned view unchanged.
+        x = x.clone(at::MemoryFormat::Contiguous);
+    }
+}
 
 void set_hadamard_params(HadamardParamsBase &params,
                          // sizes
@@ -98,6 +107,7 @@ fast_hadamard_transform(at::Tensor &x, float scale) {
     TORCH_CHECK(dim % 8 == 0, "fast_hadamard_transform only supports hidden dimension divisible by 8 for now");
     TORCH_CHECK(dim <= 32768, "fast_hadamard_transform only supports hidden dimension at most 32768 for now");
 
+    align_input(x, 16);
     at::Tensor out = torch::empty_like(x);
 
     HadamardParamsBase params;
@@ -145,6 +155,7 @@ fast_hadamard_transform_12N(at::Tensor &x, float scale) {
     TORCH_CHECK(dim % (4 * 12) == 0, "fast_hadamard_transform_12N only supports hidden dimension divisible by 48 for now");
     TORCH_CHECK(dim <= 12 * 1024, "fast_hadamard_transform_12N only supports hidden dimension at most 12288 for now");
 
+    align_input(x, 4 * x.element_size());
     at::Tensor out = torch::empty_like(x);
 
     HadamardParamsBase params;
@@ -192,6 +203,7 @@ fast_hadamard_transform_20N(at::Tensor &x, float scale) {
     TORCH_CHECK(dim % (4 * 20) == 0, "fast_hadamard_transform_20N only supports hidden dimension divisible by 80 for now");
     TORCH_CHECK(dim <= 20 * 1024, "fast_hadamard_transform_20N only supports hidden dimension at most 20480 for now");
 
+    align_input(x, 4 * x.element_size());
     at::Tensor out = torch::empty_like(x);
 
     HadamardParamsBase params;
@@ -239,6 +251,7 @@ fast_hadamard_transform_28N(at::Tensor &x, float scale) {
     TORCH_CHECK(dim % (4 * 28) == 0, "fast_hadamard_transform_28N only supports hidden dimension divisible by 112 for now");
     TORCH_CHECK(dim <= 28 * 1024, "fast_hadamard_transform_28N only supports hidden dimension at most 28672 for now");
 
+    align_input(x, 4 * x.element_size());
     at::Tensor out = torch::empty_like(x);
 
     HadamardParamsBase params;
@@ -286,6 +299,7 @@ fast_hadamard_transform_40N(at::Tensor &x, float scale) {
     TORCH_CHECK(dim % (4 * 40) == 0, "fast_hadamard_transform_40N only supports hidden dimension divisible by 160 for now");
     TORCH_CHECK(dim <= 40 * 1024, "fast_hadamard_transform_40N only supports hidden dimension at most 40960 for now");
 
+    align_input(x, 4 * x.element_size());
     at::Tensor out = torch::empty_like(x);
 
     HadamardParamsBase params;
