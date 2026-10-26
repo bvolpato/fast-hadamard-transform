@@ -30,6 +30,7 @@ def test_backward_with_misaligned_gradient():
     ("transform", "dim"),
     [
         (hadamard_transform, 8),
+        (hadamard_transform, 24),
         (hadamard_transform_12N, 48),
         (hadamard_transform_20N, 80),
         (hadamard_transform_28N, 112),
